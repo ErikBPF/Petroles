@@ -4,6 +4,8 @@ import requests
 from bs4 import BeautifulSoup
 import os
 from wand.image import Image as wi
+from wand.color import Color
+
 #%%
 def make_dir(directory):
     if not os.path.exists(directory):
@@ -75,11 +77,14 @@ class capture_utils():
                 for img in pdfImage.sequence:
                     print('Doing page {} of {}'.format(i+1,len(pdfImage.sequence)))
                     page = wi(image=img)
+                    page.background_color = Color('white')
+                    page.alpha_channel = 'remove'
                     page.save(filename=os.path.join(path,str(i)+".jpg"))
                     i= i+1
 #%%
-capture_utils.get_anp_papers()
+#capture_utils.get_anp_papers()
 #%%
 capture_utils.pdf_to_img()
 
+# %%
 # %%
