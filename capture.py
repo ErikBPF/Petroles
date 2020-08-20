@@ -3,9 +3,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 import os
-from wand.image import Image as wi
-from wand.color import Color
-
+from pdf2image import convert_from_path
 #%%
 def make_dir(directory):
     if not os.path.exists(directory):
@@ -65,26 +63,29 @@ class capture_utils():
             for file in f:
                 numfiles= numfiles+1
         numdone=0
+        errors = []
         for  r, d, f in os.walk(os.path.join(os.getcwd(),'papers','pdfs')):
             for file in f:
                 numdone = numdone+1
                 print ('Converting file {} | {} of {}'.format(file,numdone,numfiles))
-                i = 0
                 path = os.path.join(os.getcwd(),'papers','imgs',str(r).split(os.path.sep)[-1],file.strip('.pdf'))
                 make_dir(path)
-                pdf = wi(filename=os.path.join(r,file), resolution = 300)
-                pdfImage = pdf.convert("jpeg")
-                for img in pdfImage.sequence:
-                    print('Doing page {} of {}'.format(i+1,len(pdfImage.sequence)))
-                    page = wi(image=img)
-                    page.background_color = Color('white')
-                    page.alpha_channel = 'remove'
-                    page.save(filename=os.path.join(path,str(i)+".jpg"))
-                    i= i+1
+                try:
+                    pages = convert_from_path(os.path.join(r,file),output_folder=path,dpi=300, fmt="jpg",thread_count=8)
+                    l = []
+                    for i in range(len(pages)):
+                        l.append(pages[i].filename)
+                    pages = 0
+                    for i in range(len(l)):
+                        old_name = l[i]
+                        new_name = l[i][:len(l[i])-len(l[i].split(os.path.sep)[-1])]+str(i)+".jpg"
+                        os.rename(old_name,new_name)
+                except:
+                    print ('Error on file {}. Check repport'.format(file))
+                    errors.append(os.path.join(r,file))
+        return errors
+
 #%%
 #capture_utils.get_anp_papers()
-#%%
-capture_utils.pdf_to_img()
 
-# %%
 # %%
