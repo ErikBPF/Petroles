@@ -6,7 +6,7 @@ import os
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-# %%
+from multiprocessing import Pool
 config = r'-l por+eng --psm 6'
 
 def plot(img):
@@ -63,7 +63,6 @@ def deskew(image):
 def match_template(image, template):
     return cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED) 
 
-# %%
 def ocr(imgpath):
     print('doing '+imgpath+'\n')
     img = cv2.imread(imgpath )
@@ -71,19 +70,27 @@ def ocr(imgpath):
     thresh = thresholding(gray)
     df = pytesseract.image_to_data(imgpath, output_type='data.frame',config=config)
     return df
-# %%
-def create_db():
-    full_df = pd.DataFrame([])
-    for r,d,f in os.walk(os.path.join(os.getcwd(),'papers','imgs')):
+def create_db(paths):
+    for r,d,f in os.walk(paths):
         for file in f:
-            print(file)
             try:
                 df = ocr(os.path.join(r,file))
-                df['file'] = r.split(os.sep)[-2]+"|"+r.split(os.sep)[-2]+'|'+file
-                full_df = full_df.append(df,ignore_index=True)
+                df['folder'] = r.split(os.sep)[-2]
+                df['file'] = r.split(os.sep)[-1]
+                df['page'] = file.strip('.jpg')
+                pathname = os.path.join(os.getcwd(),'papers','csvs')
+                filename = r.strip(os.path.join(os.getcwd(),'papers','imgs')).replace(os.path.sep,'|')
+                df.to_csv(os.path.join(pathname,filename+"|"+file+".csv"),encoding='utf-8')
             except:
                 print('Error on file '+file)
-    full_df.to_csv('full_df.csv',encoding='utf-8')
 
 
-#%%
+# %%
+ls = []
+for r,d,f in os.walk(os.path.join(os.getcwd(),'papers','pdfs')):
+    for file in f:
+       ls.append(os.path.join(r,file).strip('.pdf').replace('pdfs','imgs')) 
+
+for i in Pool(4).imap_unordered(create_db, ls):
+    pass
+# %%
